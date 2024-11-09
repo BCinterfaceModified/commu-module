@@ -2,15 +2,19 @@ package commu_module
 
 import (
 	"bufio"
+	"crypto/ed25519"
+	"crypto/sha256"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"strings"
 
+	"github.com/BCinterfaceModified/commu-module/vrfs"
 	"github.com/gomodule/redigo/redis"
 )
 
-func GetAddressList(fileName string) []string {
+func getAddressList(fileName string) []string {
 	file, err := os.Open("/usr/local/bin/" + fileName)
 	if err != nil {
 		log.Fatalf("can't open file: %v", err)
@@ -35,8 +39,8 @@ func GetAddressList(fileName string) []string {
 	return lines
 }
 
-func PublishMessageToRedis(channelName string, message []byte) {
-	redisHost, redisPort := ParseAddress(redisList[0])
+func publishMessageToRedis(channelName string, message []byte) {
+	redisHost, redisPort := parseAddress(redisList[0])
 	c, _ := redis.DialURL("redis://" + redisHost + redisPort)
 	if c == nil {
 		fmt.Println("Error Occured: PublishMessageToRedis")
@@ -45,7 +49,7 @@ func PublishMessageToRedis(channelName string, message []byte) {
 	c.Do("PUBLISH", channelName, message)
 }
 
-func ParseAddress(fullAddress string) (string, string) {
+func parseAddress(fullAddress string) (string, string) {
 	parts := strings.SplitN(fullAddress, ":", 2)
 
 	//Error check
@@ -56,4 +60,59 @@ func ParseAddress(fullAddress string) (string, string) {
 
 	//parts[0]: Host, parts[1]: Port
 	return parts[0], parts[1]
+}
+
+func generateGlobalKeyPair() {
+	pk, sk, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		log.Println("Error in generate PkSk: ", err)
+	}
+
+	globalKeyPair.SecretKey = sk
+	globalKeyPair.PublicKey = pk
+}
+
+func hashRatio(vrfOutput []byte) float64 {
+	t := &big.Int{}
+	t.SetBytes(vrfOutput[:])
+
+	precision := uint(8 * (len(vrfOutput) + 1))
+	max, b, err := big.ParseFloat("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 0, precision, big.ToNearestEven)
+	if b != 16 || err != nil {
+		log.Fatal("failed to parse big float constant for sortition")
+	}
+
+	//hash value as int expression.
+	//hval, _ := h.Float64() to get the value
+	h := big.Float{}
+	h.SetPrec(precision)
+	h.SetInt(t)
+	//https://stackoverflow.com/questions/13582519/how-to-generate-hash-number-of-a-string-in-go
+	ratio := big.Float{}
+	cratio, _ := ratio.Quo(&h, max).Float64()
+
+	return cratio
+}
+
+// seed must never be exposed to public.
+func generateVrfOutput(seed string) ([]byte, []byte, float64) {
+	fmt.Println("VRF output function input seed: ", seed)
+
+	hashedSeed := sha256.Sum256([]byte(seed))
+
+	vrfProof, vrfOutput, err := vrfs.Prove(globalKeyPair.PublicKey, globalKeyPair.SecretKey, hashedSeed[:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	vrfResult, err := vrfs.Verify(globalKeyPair.PublicKey, vrfProof, hashedSeed[:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !vrfResult {
+		fmt.Println("Error in VRF Result")
+	}
+
+	vrfRatio := hashRatio(vrfOutput)
+
+	return vrfProof, vrfOutput, vrfRatio
 }

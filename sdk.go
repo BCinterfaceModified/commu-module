@@ -17,7 +17,7 @@ var recvCommitteeInfo CommitteeInfo
 var grpcResult chan int32 = make(chan int32)
 
 // 채널명: CommitteeList -> interface server로부터 redis 통해 committee list 수신함
-func SubscriptionCommitteeListChannel() {
+func subscriptionCommitteeListChannel() {
 	redisConnect, err := redis.Dial("tcp", redisList[serverSelectionNum])
 	if err != nil {
 		log.Println("Error occured when subscription interface: ", err)
@@ -42,7 +42,7 @@ func SubscriptionCommitteeListChannel() {
 	}
 }
 
-func RequestSetupCommitteeToInterface(round int32) {
+func requestSetupCommitteeToInterface(round int32) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 	conn, err := grpc.DialContext(ctx, interfaceList[serverSelectionNum], grpc.WithInsecure(), grpc.WithBlock())
