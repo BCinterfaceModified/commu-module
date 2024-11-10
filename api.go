@@ -51,6 +51,7 @@ func JoinNetwork(nodeData EnrollAccountEntity, servers ServerList) {
 	serverList = servers
 	generateGlobalKeyPair()
 	go subscriptionCommitteeListChannel()
+	requestEnrollNodeDataToInterface(nodeData)
 }
 
 // vrf 실행하고 결과값 포함해서 보내기
