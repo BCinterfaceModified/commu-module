@@ -8,7 +8,6 @@ import (
 	"time"
 
 	pb "github.com/BCinterfaceModified/commu-module/bcinterface"
-	"google.golang.org/grpc"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -18,7 +17,7 @@ var grpcResult chan int32 = make(chan int32)
 
 // 채널명: CommitteeList -> interface server로부터 redis 통해 committee list 수신함
 func subscriptionCommitteeListChannel() {
-	redisConnect, err := redis.Dial("tcp", redisList[serverSelectionNum])
+	redisConnect, err := redis.Dial("tcp", serverList.redisList[serverSelectionNum])
 	if err != nil {
 		log.Println("Error occured when subscription interface: ", err)
 	} else {
@@ -42,34 +41,48 @@ func subscriptionCommitteeListChannel() {
 	}
 }
 
-func requestSetupCommitteeToInterface(round int32) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+// proto파일의 EnrollAccount 함수를 이용해서 interface server에 Join한 노드정보 저장
+func requestEnrollNodeDataToInterface(enrollAccountEntity EnrollAccountEntity) {
+	client := dialGrpcConnection()
 
-	conn, err := grpc.DialContext(ctx, interfaceList[serverSelectionNum], grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Println("did not connect to client server(RequestCommitteeSetupNormal):", err)
-
-		cancel()
-		return
-	} else {
-		c := pb.NewBlockchainInterfaceClient(conn)
-
-		for {
-			ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-			r, err := c.SetupCommittee(ctx, &pb.SetupCommitteeRequest{
-				Round: round,
-			})
-			if err != nil {
-				log.Println("ERROR :", err)
-				cancel()
-			} else {
-				fmt.Println(r.GetCode())
-				grpcResult <- r.GetCode()
-				cancel()
-				defer close(grpcResult)
-				break
-			}
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		r, err := client.EnrollAccount(ctx, &pb.EnrollAccountRequest{
+			Type:      enrollAccountEntity.Type,
+			Address:   enrollAccountEntity.Address,
+			Pubkey:    []byte(enrollAccountEntity.Pubkey),
+			Signature: []byte(enrollAccountEntity.Signature),
+		})
+		if err != nil {
+			log.Println("ERROR :", err)
+			cancel()
+		} else {
+			fmt.Println(r.GetCode())
+			grpcResult <- r.GetCode()
+			cancel()
+			defer close(grpcResult)
+			break
 		}
 	}
+}
 
+func requestSetupCommitteeToInterface(round int32) {
+	client := dialGrpcConnection()
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		r, err := client.SetupCommittee(ctx, &pb.SetupCommitteeRequest{
+			Round: round,
+		})
+		if err != nil {
+			log.Println("ERROR :", err)
+			cancel()
+		} else {
+			fmt.Println(r.GetCode())
+			grpcResult <- r.GetCode()
+			cancel()
+			defer close(grpcResult)
+			break
+		}
+	}
 }
