@@ -1,6 +1,9 @@
 package commu_module
 
-import "crypto/ed25519"
+import (
+	"crypto/ed25519"
+	"fmt"
+)
 
 type EnrollAccountEntity struct {
 	Type      string `json:"type"`
@@ -54,5 +57,10 @@ func ReqeustSetupCommittee(requestData RequestSetupcommittee) {
 }
 
 func LeaveNetwork(nodeData LeaveAccountEntity) {
+	fmt.Println("module test: Leave Network")
+	generateGlobalKeyPair()
+	_, _, ratio := generateVrfOutput("LEAVE")
+
+	fmt.Println("VRF Ratio : ", ratio)
 	// redis등 구독정보를 해제하도록 설정
 }

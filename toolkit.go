@@ -95,6 +95,7 @@ func hashRatio(vrfOutput []byte) float64 {
 }
 
 // seed must never be exposed to public.
+// 해당함수가 호출되기 전에는 반드시 generateGlobalKeyPair에 의해 pk와 sk가 생성되어 있어야한다.
 func generateVrfOutput(seed string) ([]byte, []byte, float64) {
 	fmt.Println("VRF output function input seed: ", seed)
 
