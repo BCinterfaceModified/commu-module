@@ -1,46 +1,23 @@
 package commu_module
 
 import (
-	"bufio"
+	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"fmt"
 	"log"
 	"math/big"
-	"os"
 	"strings"
+	"time"
 
+	pb "github.com/BCinterfaceModified/commu-module/bcinterface"
 	"github.com/BCinterfaceModified/commu-module/vrfs"
 	"github.com/gomodule/redigo/redis"
+	"google.golang.org/grpc"
 )
 
-func getAddressList(fileName string) []string {
-	file, err := os.Open("/usr/local/bin/" + fileName)
-	if err != nil {
-		log.Fatalf("can't open file: %v", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	// 각 줄을 저장할 슬라이스 생성
-	var lines []string
-
-	// 파일을 줄 단위로 읽어서 슬라이스에 저장
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	// 스캐너 에러 확인
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("failed to read file: %v", err)
-	}
-
-	return lines
-}
-
 func publishMessageToRedis(channelName string, message []byte) {
-	redisHost, redisPort := parseAddress(redisList[0])
+	redisHost, redisPort := parseAddress(serverList.redisList[serverSelectionNum])
 	c, _ := redis.DialURL("redis://" + redisHost + redisPort)
 	if c == nil {
 		fmt.Println("Error Occured: PublishMessageToRedis")
@@ -116,4 +93,18 @@ func generateVrfOutput(seed string) ([]byte, []byte, float64) {
 	vrfRatio := hashRatio(vrfOutput)
 
 	return vrfProof, vrfOutput, vrfRatio
+}
+
+func dialGrpcConnection() pb.BlockchainInterfaceClient {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, serverList.interfaceList[serverSelectionNum], grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Println("did not connect to server:", err)
+		return nil
+	}
+
+	client := pb.NewBlockchainInterfaceClient(conn)
+	return client
 }
