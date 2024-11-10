@@ -15,7 +15,7 @@ message EnrollAccountRequest {
 }
 
 message EnrollAccountResponse {
-    bool is_enrolled = 1;
+    int32 code = 1;
 }
 
 message SetupCommitteeRequest {
