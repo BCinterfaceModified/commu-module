@@ -1,4 +1,0 @@
-interface-server1:50051
-interface-server2:50052
-interface-server3:50053
-interface-server4:50054
