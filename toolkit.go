@@ -108,3 +108,13 @@ func dialGrpcConnection() pb.BlockchainInterfaceClient {
 	client := pb.NewBlockchainInterfaceClient(conn)
 	return client
 }
+
+func sortition(ratio float64) bool {
+	sortitionThreshold := 1.0
+
+	fmt.Println(ratio)
+	if ratio > sortitionThreshold {
+		return false
+	}
+	return true
+}

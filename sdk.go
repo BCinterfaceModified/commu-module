@@ -2,6 +2,7 @@ package commu_module
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -42,16 +43,19 @@ func subscriptionCommitteeListChannel() {
 }
 
 // proto파일의 EnrollAccount 함수를 이용해서 interface server에 Join한 노드정보 저장
-func requestEnrollNodeDataToInterface(enrollAccountEntity EnrollAccountEntity) {
+// interface는 해당 요청 받을 시 mongodb에 해당 데이터 저장하도록 수행.
+func requestEnrollNodeDataToInterface(nodeIP string) {
 	client := dialGrpcConnection()
+
+	//등록할 signature 생성(globalkeypair 기반)
+	signature := ed25519.Sign(globalKeyPair.SecretKey, []byte(nodeIP))
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		r, err := client.EnrollAccount(ctx, &pb.EnrollAccountRequest{
-			Type:      enrollAccountEntity.Type,
-			Address:   enrollAccountEntity.Address,
-			Pubkey:    []byte(enrollAccountEntity.Pubkey),
-			Signature: []byte(enrollAccountEntity.Signature),
+			Address:   nodeIP,
+			Pubkey:    globalKeyPair.PublicKey,
+			Signature: signature,
 		})
 		if err != nil {
 			log.Println("ERROR :", err)
@@ -67,12 +71,27 @@ func requestEnrollNodeDataToInterface(enrollAccountEntity EnrollAccountEntity) {
 }
 
 func requestSetupCommitteeToInterface(round int32) {
+	seed := "test"
+	vrfProof, _, vrfRatio := generateVrfOutput(seed)
+
+	if !sortition(vrfRatio) {
+		log.Println("VRF ratio can't meet threshold")
+		return
+	}
+
 	client := dialGrpcConnection()
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		r, err := client.SetupCommittee(ctx, &pb.SetupCommitteeRequest{
-			Round: round,
+			Round:     round,
+			Nodeip:    storedNodeIP,
+			Vrfpubkey: globalKeyPair.PublicKey,
+			VrfResult: &pb.VrfValue{
+				Val:    seed,
+				Proof:  vrfProof,
+				Pubkey: globalKeyPair.PublicKey,
+			},
 		})
 		if err != nil {
 			log.Println("ERROR :", err)
