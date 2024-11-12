@@ -19,16 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	BlockchainInterface_EnrollAccount_FullMethodName  = "/commu_module.BlockchainInterface/EnrollAccount"
+	BlockchainInterface_EnrollNodeInfo_FullMethodName = "/commu_module.BlockchainInterface/EnrollNodeInfo"
 	BlockchainInterface_SetupCommittee_FullMethodName = "/commu_module.BlockchainInterface/SetupCommittee"
+	BlockchainInterface_LeaveRequest_FullMethodName   = "/commu_module.BlockchainInterface/LeaveRequest"
 )
 
 // BlockchainInterfaceClient is the client API for BlockchainInterface service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BlockchainInterfaceClient interface {
-	EnrollAccount(ctx context.Context, in *EnrollAccountRequest, opts ...grpc.CallOption) (*EnrollAccountResponse, error)
+	EnrollNodeInfo(ctx context.Context, in *NodeData, opts ...grpc.CallOption) (*EnrollAccountResponse, error)
 	SetupCommittee(ctx context.Context, in *SetupCommitteeRequest, opts ...grpc.CallOption) (*SetupCommitteeResponse, error)
+	LeaveRequest(ctx context.Context, in *NodeData, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type blockchainInterfaceClient struct {
@@ -39,9 +41,9 @@ func NewBlockchainInterfaceClient(cc grpc.ClientConnInterface) BlockchainInterfa
 	return &blockchainInterfaceClient{cc}
 }
 
-func (c *blockchainInterfaceClient) EnrollAccount(ctx context.Context, in *EnrollAccountRequest, opts ...grpc.CallOption) (*EnrollAccountResponse, error) {
+func (c *blockchainInterfaceClient) EnrollNodeInfo(ctx context.Context, in *NodeData, opts ...grpc.CallOption) (*EnrollAccountResponse, error) {
 	out := new(EnrollAccountResponse)
-	err := c.cc.Invoke(ctx, BlockchainInterface_EnrollAccount_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, BlockchainInterface_EnrollNodeInfo_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +59,22 @@ func (c *blockchainInterfaceClient) SetupCommittee(ctx context.Context, in *Setu
 	return out, nil
 }
 
+func (c *blockchainInterfaceClient) LeaveRequest(ctx context.Context, in *NodeData, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, BlockchainInterface_LeaveRequest_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BlockchainInterfaceServer is the server API for BlockchainInterface service.
 // All implementations must embed UnimplementedBlockchainInterfaceServer
 // for forward compatibility
 type BlockchainInterfaceServer interface {
-	EnrollAccount(context.Context, *EnrollAccountRequest) (*EnrollAccountResponse, error)
+	EnrollNodeInfo(context.Context, *NodeData) (*EnrollAccountResponse, error)
 	SetupCommittee(context.Context, *SetupCommitteeRequest) (*SetupCommitteeResponse, error)
+	LeaveRequest(context.Context, *NodeData) (*Empty, error)
 	mustEmbedUnimplementedBlockchainInterfaceServer()
 }
 
@@ -70,11 +82,14 @@ type BlockchainInterfaceServer interface {
 type UnimplementedBlockchainInterfaceServer struct {
 }
 
-func (UnimplementedBlockchainInterfaceServer) EnrollAccount(context.Context, *EnrollAccountRequest) (*EnrollAccountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EnrollAccount not implemented")
+func (UnimplementedBlockchainInterfaceServer) EnrollNodeInfo(context.Context, *NodeData) (*EnrollAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnrollNodeInfo not implemented")
 }
 func (UnimplementedBlockchainInterfaceServer) SetupCommittee(context.Context, *SetupCommitteeRequest) (*SetupCommitteeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetupCommittee not implemented")
+}
+func (UnimplementedBlockchainInterfaceServer) LeaveRequest(context.Context, *NodeData) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaveRequest not implemented")
 }
 func (UnimplementedBlockchainInterfaceServer) mustEmbedUnimplementedBlockchainInterfaceServer() {}
 
@@ -89,20 +104,20 @@ func RegisterBlockchainInterfaceServer(s grpc.ServiceRegistrar, srv BlockchainIn
 	s.RegisterService(&BlockchainInterface_ServiceDesc, srv)
 }
 
-func _BlockchainInterface_EnrollAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EnrollAccountRequest)
+func _BlockchainInterface_EnrollNodeInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeData)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BlockchainInterfaceServer).EnrollAccount(ctx, in)
+		return srv.(BlockchainInterfaceServer).EnrollNodeInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: BlockchainInterface_EnrollAccount_FullMethodName,
+		FullMethod: BlockchainInterface_EnrollNodeInfo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockchainInterfaceServer).EnrollAccount(ctx, req.(*EnrollAccountRequest))
+		return srv.(BlockchainInterfaceServer).EnrollNodeInfo(ctx, req.(*NodeData))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -125,6 +140,24 @@ func _BlockchainInterface_SetupCommittee_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlockchainInterface_LeaveRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeData)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlockchainInterfaceServer).LeaveRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlockchainInterface_LeaveRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlockchainInterfaceServer).LeaveRequest(ctx, req.(*NodeData))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BlockchainInterface_ServiceDesc is the grpc.ServiceDesc for BlockchainInterface service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -133,12 +166,16 @@ var BlockchainInterface_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BlockchainInterfaceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "EnrollAccount",
-			Handler:    _BlockchainInterface_EnrollAccount_Handler,
+			MethodName: "EnrollNodeInfo",
+			Handler:    _BlockchainInterface_EnrollNodeInfo_Handler,
 		},
 		{
 			MethodName: "SetupCommittee",
 			Handler:    _BlockchainInterface_SetupCommittee_Handler,
+		},
+		{
+			MethodName: "LeaveRequest",
+			Handler:    _BlockchainInterface_LeaveRequest_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -13,6 +13,30 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
+type vrfValue struct {
+	Val    string
+	Proof  []byte
+	PubKey []byte
+}
+
+// committee request할 때 보내는 데이터
+// 해당 데이터는 grpc에 정의
+type CommitteeNodeInfo struct {
+	Round     int32    `json:"round"`
+	Address   string   `json:"address"`
+	VrfPubKey []byte   `json:"vrfpubkey"`
+	VrfResult vrfValue `json:"vrfresult"`
+}
+
+// committee request에 대한 response로 받는 데이터
+type CommitteeInfo struct {
+	AggregateCommit []byte
+	AggregatePubKey []byte
+	CommitteeList   []CommitteeNodeInfo
+	PrimaryNodeInfo string
+	//isLeader        bool
+}
+
 var recvCommitteeInfo CommitteeInfo
 var grpcResult chan int32 = make(chan int32)
 
@@ -27,17 +51,22 @@ func subscriptionCommitteeListChannel() {
 	psc := redis.PubSubConn{Conn: redisConnect}
 	psc.Subscribe("CommitteeList")
 	for {
-		switch v := psc.Receive().(type) {
-		case redis.Message:
-			if string(v.Data) == "CHANGE_REDIS_ADDRESS" {
-				log.Println("receive chage the redis address, break!")
-				redisConnect.Close()
-				return
+		select {
+		case <-globalCtx.Done():
+			log.Println("Received cancel signal, close subscription")
+			return
+		default:
+			switch v := psc.Receive().(type) {
+			case redis.Message:
+				if string(v.Data) == "CHANGE_REDIS_ADDRESS" {
+					log.Println("receive chage the redis address, break!")
+					redisConnect.Close()
+					return
+				}
+
+				recvCommitteeInfo = CommitteeInfo{}
+				json.Unmarshal(v.Data, &recvCommitteeInfo)
 			}
-
-			recvCommitteeInfo = CommitteeInfo{}
-
-			json.Unmarshal(v.Data, &recvCommitteeInfo)
 		}
 	}
 }
@@ -52,7 +81,7 @@ func requestEnrollNodeDataToInterface(nodeIP string) {
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		r, err := client.EnrollAccount(ctx, &pb.EnrollAccountRequest{
+		r, err := client.EnrollNodeInfo(ctx, &pb.NodeData{
 			Address:   nodeIP,
 			Pubkey:    globalKeyPair.PublicKey,
 			Signature: signature,
@@ -75,7 +104,7 @@ func requestSetupCommitteeToInterface(round int32) {
 	vrfProof, _, vrfRatio := generateVrfOutput(seed)
 
 	if !sortition(vrfRatio) {
-		log.Println("VRF ratio can't meet threshold")
+		log.Println("VRF ratio can't meet threshold: ", vrfRatio)
 		return
 	}
 
@@ -99,6 +128,29 @@ func requestSetupCommitteeToInterface(round int32) {
 		} else {
 			fmt.Println(r.GetCode())
 			grpcResult <- r.GetCode()
+			cancel()
+			defer close(grpcResult)
+			break
+		}
+	}
+}
+
+func requestLeaveNodeToInterface() {
+	client := dialGrpcConnection()
+
+	signature := ed25519.Sign(globalKeyPair.SecretKey, []byte(storedNodeIP))
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		_, err := client.LeaveRequest(ctx, &pb.NodeData{
+			Address:   storedNodeIP,
+			Pubkey:    globalKeyPair.PublicKey,
+			Signature: signature,
+		})
+		if err != nil {
+			log.Println("ERROR : ", err)
+			cancel()
+		} else {
 			cancel()
 			defer close(grpcResult)
 			break

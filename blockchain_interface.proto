@@ -3,11 +3,13 @@ option go_package = "./bcinterface";
 package commu_module;   //이거 이름을 bcinterface나 communication_system 같은것도 괜찮을 것 같은데...
 
 service BlockchainInterface {
-    rpc EnrollAccount(EnrollAccountRequest) returns(EnrollAccountResponse);
+    rpc EnrollNodeInfo(NodeData) returns(EnrollAccountResponse);
     rpc SetupCommittee(SetupCommitteeRequest) returns(SetupCommitteeResponse);
+    rpc LeaveRequest(NodeData) returns (Empty);
 }
+message Empty {}
 
-message EnrollAccountRequest {
+message NodeData {
     string address = 1;
     bytes pubkey = 2;
     bytes signature = 3;
@@ -31,5 +33,9 @@ message SetupCommitteeRequest {
 }
 
 message SetupCommitteeResponse {
-    int32 code =1;
+    int32 code = 1;
+}
+
+message LeaveRequestResponse {
+    int32 code = 1;
 }

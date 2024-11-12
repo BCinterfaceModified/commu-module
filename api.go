@@ -1,7 +1,9 @@
 package commu_module
 
 import (
+	"context"
 	"crypto/ed25519"
+	"log"
 )
 
 // 최초 등록시 필요한 struct
@@ -22,34 +24,15 @@ type LeaveAccountEntity struct {
 	Signature string
 }
 
-/* type vrfValueEntity struct {
-	Val    string
-	Proof  []byte
-	PubKey []byte
-} */
-
-// committee request할 때 보내는 데이터
-// 해당 데이터는 grpc에 정의
-/* type CommitteeNodeInfo struct {
-	Round     int32          `json:"round"`
-	Address   string         `json:"address"`
-	VrfPubKey []byte         `json:"vrfpubkey"`
-	VrfResult vrfValueEntity `json:"vrfresult"`
-} */
-
-// committee request에 대한 response로 받는 데이터
-type CommitteeInfo struct {
-	AggregateCommit []byte
-	AggregatePubKey []byte
-	//CommitteeList   []CommitteeNodeInfo
-	PrimaryNodeInfo string
-	isLeader        bool
-}
-
 type KeyPair struct {
 	PublicKey ed25519.PublicKey
 	SecretKey ed25519.PrivateKey
 }
+
+var (
+	globalCtx    context.Context
+	globalCancel context.CancelFunc
+)
 
 var globalKeyPair KeyPair
 var serverList ServerList
@@ -68,6 +51,8 @@ func JoinNetwork(nodeIP string, servers ServerList) {
 	storedNodeIP = nodeIP
 
 	generateGlobalKeyPair()
+
+	globalCtx, globalCancel = context.WithCancel(context.Background())
 	go subscriptionCommitteeListChannel()
 	requestEnrollNodeDataToInterface(storedNodeIP)
 }
@@ -77,7 +62,14 @@ func ReqeustSetupCommittee(round int32) {
 	requestSetupCommitteeToInterface(round)
 }
 
-func LeaveNetwork(nodeData LeaveAccountEntity) {
+// node IP가 LEAVE까지 변경되지 않았을 것을 가정
+func LeaveNetwork() {
+	// redis 구독정보 해제
+	if globalCancel != nil {
+		globalCancel()
+	} else {
+		log.Println("No active subscription to cancel")
+	}
 
-	// redis등 구독정보를 해제하도록 설정
+	requestLeaveNodeToInterface()
 }
