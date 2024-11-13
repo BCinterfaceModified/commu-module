@@ -14,9 +14,9 @@ import (
 )
 
 type vrfValue struct {
-	Val    string
-	Proof  []byte
-	PubKey []byte
+	Val    string `json:"val"`
+	Proof  []byte `json:"pi"`
+	PubKey []byte `json:"pk"`
 }
 
 // committee request할 때 보내는 데이터
@@ -30,9 +30,9 @@ type CommitteeNodeInfo struct {
 
 // committee request에 대한 response로 받는 데이터
 type CommitteeInfo struct {
-	AggregateCommit []byte
-	AggregatePubKey []byte
-	CommitteeList   []CommitteeNodeInfo
+	AggregateCommit []byte              `json:"aggcommit"`
+	AggregatePubKey []byte              `json:"aggpubkey"`
+	CommitteeList   []CommitteeNodeInfo `json:"committeelist"`
 	PrimaryNodeInfo string
 	//isLeader        bool
 }
@@ -78,9 +78,11 @@ func requestEnrollNodeDataToInterface(nodeIP string) {
 
 	//등록할 signature 생성(globalkeypair 기반)
 	signature := ed25519.Sign(globalKeyPair.SecretKey, []byte(nodeIP))
+	fmt.Println("Signature 생성")
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		fmt.Println("send Request")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		r, err := client.EnrollNodeInfo(ctx, &pb.NodeData{
 			Address:   nodeIP,
 			Pubkey:    globalKeyPair.PublicKey,
@@ -90,10 +92,11 @@ func requestEnrollNodeDataToInterface(nodeIP string) {
 			log.Println("ERROR :", err)
 			cancel()
 		} else {
+			fmt.Println("Get Code! successfully enroll")
 			fmt.Println(r.GetCode())
-			grpcResult <- r.GetCode()
+			//grpcResult <- r.GetCode()
 			cancel()
-			defer close(grpcResult)
+			//defer close(grpcResult)
 			break
 		}
 	}
@@ -127,9 +130,9 @@ func requestSetupCommitteeToInterface(round int32) {
 			cancel()
 		} else {
 			fmt.Println(r.GetCode())
-			grpcResult <- r.GetCode()
+			//grpcResult <- r.GetCode()
 			cancel()
-			defer close(grpcResult)
+			//defer close(grpcResult)
 			break
 		}
 	}
