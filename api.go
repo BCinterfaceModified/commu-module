@@ -66,7 +66,7 @@ func ReqeustSetupCommittee(round int32) {
 	requestSetupCommitteeToInterface(round)
 }
 
-// node IP가 LEAVE까지 변경되지 않았을 것을 가정
+// node IP가 LEAVE까지 변경되지 않았을 것을 가정합니다.
 func LeaveNetwork() {
 	// redis 구독정보 해제
 	if globalCancel != nil {
