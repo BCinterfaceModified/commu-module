@@ -3,7 +3,6 @@ package commu_module
 import (
 	"context"
 	"crypto/ed25519"
-	"fmt"
 	"log"
 )
 
@@ -60,12 +59,10 @@ func JoinNetwork(nodeIP string, servers ServerList) {
 	globalCtx, globalCancel = context.WithCancel(context.Background())
 	go subscriptionCommitteeListChannel()
 	requestEnrollNodeDataToInterface(storedNodeIP)
-	fmt.Println("end of JoinNetwork")
 }
 
 // 현재 Round값만 채워서 보내주시면 됩니다.
 func ReqeustSetupCommittee(round int32) (recvCommittee CommitteeInfo) {
-	fmt.Println("I send Request to generate Committee")
 	requestSetupCommitteeToInterface(round)
 
 	return recvCommitteeInfo
