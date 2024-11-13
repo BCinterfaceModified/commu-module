@@ -49,7 +49,7 @@ var storedNodeIP string
 
 // nodeIP는 노드의 ip주소를 보내주시고, servers에는
 // 패키지 내 ServerList 구조체에 값을 채워서 보내주시면 됩니다.
-func JoinNetwork(nodeIP string, servers ServerList) {
+func JoinNetwork(nodeIP string, servers ServerList) bool {
 	// 들어온 데이터를 grpc써서 interface server에 저장요청 보내기
 	serverList = servers
 	storedNodeIP = nodeIP
@@ -59,6 +59,8 @@ func JoinNetwork(nodeIP string, servers ServerList) {
 	globalCtx, globalCancel = context.WithCancel(context.Background())
 	go subscriptionCommitteeListChannel()
 	requestEnrollNodeDataToInterface(storedNodeIP)
+
+	return true
 }
 
 // 현재 Round값만 채워서 보내주시면 됩니다.
