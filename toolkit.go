@@ -7,17 +7,15 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"strings"
 	"time"
 
 	pb "github.com/BCinterfaceModified/commu-module/bcinterface"
 	"github.com/BCinterfaceModified/commu-module/vrfs"
-	"github.com/gomodule/redigo/redis"
 	"google.golang.org/grpc"
 )
 
-func publishMessageToRedis(channelName string, message []byte) {
-	redisHost, redisPort := parseAddress(serverList.redisList[serverSelectionNum])
+/* func publishMessageToRedis(channelName string, message []byte) {
+	redisHost, redisPort := parseAddress(serverList.RedisList[serverSelectionNum])
 	c, _ := redis.DialURL("redis://" + redisHost + redisPort)
 	if c == nil {
 		fmt.Println("Error Occured: PublishMessageToRedis")
@@ -37,7 +35,7 @@ func parseAddress(fullAddress string) (string, string) {
 
 	//parts[0]: Host, parts[1]: Port
 	return parts[0], parts[1]
-}
+} */
 
 func generateGlobalKeyPair() {
 	pk, sk, err := ed25519.GenerateKey(nil)
@@ -99,7 +97,7 @@ func dialGrpcConnection() pb.BlockchainInterfaceClient {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, serverList.interfaceList[serverSelectionNum], grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, serverList.InterfaceList[serverSelectionNum], grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Println("did not connect to server:", err)
 		return nil

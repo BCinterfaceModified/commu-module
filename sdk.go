@@ -42,7 +42,7 @@ var grpcResult chan int32 = make(chan int32)
 
 // 채널명: CommitteeList -> interface server로부터 redis 통해 committee list 수신함
 func subscriptionCommitteeListChannel() {
-	redisConnect, err := redis.Dial("tcp", serverList.redisList[serverSelectionNum])
+	redisConnect, err := redis.Dial("tcp", serverList.RedisList[serverSelectionNum])
 	if err != nil {
 		log.Println("Error occured when subscription interface: ", err)
 	} else {
