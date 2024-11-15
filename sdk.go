@@ -73,7 +73,7 @@ func subscriptionCommitteeListChannel() {
 
 // proto파일의 EnrollAccount 함수를 이용해서 interface server에 Join한 노드정보 저장
 // interface는 해당 요청 받을 시 mongodb에 해당 데이터 저장하도록 수행.
-func requestEnrollNodeDataToInterface(nodeIP string) {
+func requestEnrollNodeDataToInterface(nodeIP string) int32 {
 	client := dialGrpcConnection()
 
 	//등록할 signature 생성(globalkeypair 기반)
@@ -91,13 +91,12 @@ func requestEnrollNodeDataToInterface(nodeIP string) {
 		if err != nil {
 			log.Println("ERROR :", err)
 			cancel()
+			return 500
 		} else {
-			fmt.Println("Get Code! successfully enroll")
-			fmt.Println(r.GetCode())
 			//grpcResult <- r.GetCode()
 			cancel()
 			//defer close(grpcResult)
-			break
+			return r.GetCode()
 		}
 	}
 }

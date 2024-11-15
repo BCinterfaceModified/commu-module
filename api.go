@@ -58,9 +58,13 @@ func JoinNetwork(nodeIP string, servers ServerList) bool {
 
 	globalCtx, globalCancel = context.WithCancel(context.Background())
 	go subscriptionCommitteeListChannel()
-	requestEnrollNodeDataToInterface(storedNodeIP)
+	enrollResult := requestEnrollNodeDataToInterface(storedNodeIP)
 
-	return true
+	if enrollResult != 200 {
+		return false
+	} else {
+		return true
+	}
 }
 
 // 현재 Round값만 채워서 보내주시면 됩니다.
